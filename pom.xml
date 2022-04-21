@@ -11,6 +11,7 @@
     <modules>
         <module>ioutils-io-api</module>
         <module>ioutils-log-api</module>
+        <module>ioutils-log-jlogger</module>
     </modules>
 
     <properties>
