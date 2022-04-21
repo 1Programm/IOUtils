@@ -5,11 +5,12 @@
     <parent>
         <artifactId>ioutils-parent</artifactId>
         <groupId>com.programm.ioutils</groupId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>ioutils-stringutils</artifactId>
+    <version>1.0.0</version>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
