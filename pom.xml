@@ -12,6 +12,7 @@
         <module>ioutils-io-api</module>
         <module>ioutils-log-api</module>
         <module>ioutils-log-jlogger</module>
+        <module>ioutils-io-console</module>
         <module>ioutils-stringutils</module>
     </modules>
 
