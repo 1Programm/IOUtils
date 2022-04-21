@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>ioutils-io-api</artifactId>
+    <artifactId>ioutils-log-api</artifactId>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
