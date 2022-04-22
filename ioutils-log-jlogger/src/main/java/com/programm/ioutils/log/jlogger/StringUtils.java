@@ -107,11 +107,11 @@ class StringUtils {
     }
 
 
-    public static String format(String format, String s, String level, String logName, String className, String methodName) {
-        return format(format, 0, format.length(), s, level, logName, className, methodName);
+    public static String format(String format, String s, String level, String logName, String className, String methodName, String threadName) {
+        return format(format, 0, format.length(), s, level, logName, className, methodName, threadName);
     }
 
-    private static String format(String format, int start, int end, String s, String level, String logName, String className, String methodName) {
+    private static String format(String format, int start, int end, String s, String level, String logName, String className, String methodName, String threadName) {
         StringBuilder sb = new StringBuilder(Math.max(end - start, 16));
 
         int last = start;
@@ -123,31 +123,37 @@ class StringUtils {
                 if(format.startsWith("MSG", i + 1)){
                     sb.append(format, last, i);
                     i += 3;
-                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, s);
+                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, threadName, s);
                     last = i + 1;
                 }
                 else if(format.startsWith("LVL", i + 1)){
                     sb.append(format, last, i);
                     i += 3;
-                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, level);
+                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, threadName, level);
                     last = i + 1;
                 }
                 else if(format.startsWith("LOG", i + 1)){
                     sb.append(format, last, i);
                     i += 3;
-                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, logName);
+                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, threadName, logName);
                     last = i + 1;
                 }
                 else if(format.startsWith("CLS", i + 1)){
                     sb.append(format, last, i);
                     i += 3;
-                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, className);
+                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, threadName, className);
                     last = i + 1;
                 }
                 else if(format.startsWith("MET", i + 1)){
                     sb.append(format, last, i);
                     i += 3;
-                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, methodName);
+                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, threadName, methodName);
+                    last = i + 1;
+                }
+                else if(format.startsWith("THREAD", i + 1)){
+                    sb.append(format, last, i);
+                    i += 6;
+                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, threadName, threadName);
                     last = i + 1;
                 }
             }
@@ -209,7 +215,7 @@ class StringUtils {
                         else if(p + 1 == end) continue outerLoop;
                     }
 
-                    String content = format(format, o, p, s, level, logName, className, methodName);
+                    String content = format(format, o, p, s, level, logName, className, methodName, threadName);
 
                     sb.append(format, last, i);
                     if(alignSign == '<'){
@@ -235,7 +241,7 @@ class StringUtils {
         return sb.toString();
     }
 
-    private static int appendValueOrElse(StringBuilder sb, String format, int i, int end, String s, String level, String logName, String className, String methodName, String value){
+    private static int appendValueOrElse(StringBuilder sb, String format, int i, int end, String s, String level, String logName, String className, String methodName, String threadName, String value){
         int o = i;
         if(o != end && format.charAt(o) == '?'){
             if(++o != end && format.charAt(o) == '{'){
@@ -259,13 +265,12 @@ class StringUtils {
                         }
 
                         if(value == null) {
-                            String content = format(format, o, p, s, level, logName, className, methodName);
+                            String content = format(format, o, p, s, level, logName, className, methodName, threadName);
                             sb.append(content);
                         }
                         else {
                             sb.append(value);
                         }
-
 
                         return p;
                     }

@@ -20,6 +20,7 @@ public class JLogger extends LevelLogger implements IConfigurableLogger {
     }
 
     private final Map<String, PkgLvlNode> pkgLvlNodes = new HashMap<>();
+    private final Map<String, Integer> logNameLevels = new HashMap<>();
     private IOutput output = new DefaultConsoleOut();
     private String format;
 
@@ -32,6 +33,8 @@ public class JLogger extends LevelLogger implements IConfigurableLogger {
         String pkgName = null;
         String cName = null;
         String mName = null;
+        Thread curThread = Thread.currentThread();
+        String tName = curThread.getName();
 
         if(nextLogInfoCls != null){
             Logger loggerAnnotation = nextLogInfoCls.getAnnotation(Logger.class);
@@ -56,7 +59,7 @@ public class JLogger extends LevelLogger implements IConfigurableLogger {
             nextLogInfoMethodName = null;
         }
         else {
-            StackTraceElement[] callers = Thread.currentThread().getStackTrace();
+            StackTraceElement[] callers = curThread.getStackTrace();
 
             for(int i=callers.length-2;i>1;i--) {
                 StackTraceElement caller = callers[i];
@@ -95,20 +98,25 @@ public class JLogger extends LevelLogger implements IConfigurableLogger {
             }
         }
 
-        int logLevel = calcLogLevel(pkgName);
+        int logLevel = calcLogLevel(pkgName, logName);
         if(logLevel > level) return;
 
         String _level = ILogger.levelToString(level);
 
         String message = StringUtils.prepareMessage(s, args);
         if(format != null) {
-            message = StringUtils.format(format, message, _level, logName, cName, mName);
+            message = StringUtils.format(format, message, _level, logName, cName, mName, tName);
         }
 
         output.println(message);
     }
 
-    private int calcLogLevel(String packageName) {
+    private int calcLogLevel(String packageName, String logName) {
+        if(logName != null){
+            Integer level = logNameLevels.get(logName);
+            if(level != null) return level;
+        }
+
         int level = level();
 
         String[] pkgs = packageName.split("\\.");
@@ -153,6 +161,12 @@ public class JLogger extends LevelLogger implements IConfigurableLogger {
     @Override
     public JLogger packageLevel(String pkg, int level) throws LoggerConfigException {
         setPkgLevel(pkgLvlNodes, pkg.split("\\."), 0, level);
+        return this;
+    }
+
+    @Override
+    public IConfigurableLogger logNameLevel(String name, int level) throws LoggerConfigException {
+        logNameLevels.put(name, level);
         return this;
     }
 

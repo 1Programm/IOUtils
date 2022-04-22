@@ -12,6 +12,8 @@ public interface IConfigurableLogger extends ILogger {
 
     IConfigurableLogger packageLevel(String pkg, int level) throws LoggerConfigException;
 
+    IConfigurableLogger logNameLevel(String name, int level) throws LoggerConfigException;
+
     IConfigurableLogger output(IOutput output) throws LoggerConfigException;
 
 }
