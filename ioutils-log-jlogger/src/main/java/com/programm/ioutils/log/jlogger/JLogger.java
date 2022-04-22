@@ -3,10 +3,26 @@ package com.programm.ioutils.log.jlogger;
 import com.programm.ioutils.io.api.IOutput;
 import com.programm.ioutils.log.api.*;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 public class JLogger extends LevelLogger implements IConfigurableLogger {
+
+    private static final String DATE_FORMAT = "yyyy/MM/dd";
+    private static final String TIME_FORMAT = "HH:mm:ss";
+
+    private static int getMaxLen(String... keys){
+        int max = -1;
+
+        for(String key : keys){
+            max = Math.max(max, key.length());
+        }
+
+        return max;
+    }
 
     private static class PkgLvlNode {
         private final Map<String, PkgLvlNode> children = new HashMap<>();
@@ -18,6 +34,28 @@ public class JLogger extends LevelLogger implements IConfigurableLogger {
             this.passes = passes;
         }
     }
+
+    private static class FormattedDateStringSupplier {
+        private final String format;
+        private String dateString;
+
+        public FormattedDateStringSupplier(String format) {
+            this.format = format;
+        }
+
+        @Override
+        public String toString() {
+            if(dateString == null){
+                DateFormat dateFormat = new SimpleDateFormat(format);
+                dateString = dateFormat.format(new Date());
+            }
+
+            return dateString;
+        }
+    }
+
+    private final Map<String, Object> formatArgs = new HashMap<>();
+    private static final int FORMAT_ARGS_MAX_LENGTH = getMaxLen("MSG", "LVL", "LOG", "CLS", "MET", "THREAD", "DATE", "TIME");
 
     private final Map<String, PkgLvlNode> pkgLvlNodes = new HashMap<>();
     private final Map<String, Integer> logNameLevels = new HashMap<>();
@@ -105,10 +143,22 @@ public class JLogger extends LevelLogger implements IConfigurableLogger {
 
         String message = StringUtils.prepareMessage(s, args);
         if(format != null) {
-            message = StringUtils.format(format, message, _level, logName, cName, mName, tName);
+            putArgs(message, _level, logName, cName, mName, tName);
+            message = StringUtils.format(format, formatArgs, FORMAT_ARGS_MAX_LENGTH);
         }
 
         output.println(message);
+    }
+
+    private void putArgs(String msg, String lvl, String log, String cls, String met, String thread){
+        formatArgs.put("MSG", msg);
+        formatArgs.put("LVL", lvl);
+        formatArgs.put("LOG", log);
+        formatArgs.put("CLS", cls);
+        formatArgs.put("MET", met);
+        formatArgs.put("THREAD", thread);
+        formatArgs.put("DATE", new FormattedDateStringSupplier(DATE_FORMAT));
+        formatArgs.put("TIME", new FormattedDateStringSupplier(TIME_FORMAT));
     }
 
     private int calcLogLevel(String packageName, String logName) {

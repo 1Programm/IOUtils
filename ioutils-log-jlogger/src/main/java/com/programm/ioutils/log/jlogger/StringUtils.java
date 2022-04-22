@@ -1,5 +1,7 @@
 package com.programm.ioutils.log.jlogger;
 
+import java.util.Map;
+
 class StringUtils {
 
     public static String replaceArgs(String message, String replaceStart, String replaceEnd, Object... args) {
@@ -106,12 +108,11 @@ class StringUtils {
         return sb.toString();
     }
 
-
-    public static String format(String format, String s, String level, String logName, String className, String methodName, String threadName) {
-        return format(format, 0, format.length(), s, level, logName, className, methodName, threadName);
+    public static String format(String format, Map<String, Object> args, int maxArgKeyLength) {
+        return format(format, 0, format.length(), args, maxArgKeyLength);
     }
 
-    private static String format(String format, int start, int end, String s, String level, String logName, String className, String methodName, String threadName) {
+    private static String format(String format, int start, int end, Map<String, Object> args, int maxArgKeyLength) {
         StringBuilder sb = new StringBuilder(Math.max(end - start, 16));
 
         int last = start;
@@ -120,40 +121,19 @@ class StringUtils {
             char c = format.charAt(i);
 
             if(c == '$'){
-                if(format.startsWith("MSG", i + 1)){
-                    sb.append(format, last, i);
-                    i += 3;
-                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, threadName, s);
-                    last = i + 1;
+                Object value = null;
+                String key = null;
+                for(int o=Math.min(i+1+maxArgKeyLength, end);o>i;o--){
+                    key = format.substring(i+1, o);
+                    value = args.get(key);
+                    if(value != null) break;
+                    if(o - 1 == i) break;
                 }
-                else if(format.startsWith("LVL", i + 1)){
+
+                if(value != null){
                     sb.append(format, last, i);
-                    i += 3;
-                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, threadName, level);
-                    last = i + 1;
-                }
-                else if(format.startsWith("LOG", i + 1)){
-                    sb.append(format, last, i);
-                    i += 3;
-                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, threadName, logName);
-                    last = i + 1;
-                }
-                else if(format.startsWith("CLS", i + 1)){
-                    sb.append(format, last, i);
-                    i += 3;
-                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, threadName, className);
-                    last = i + 1;
-                }
-                else if(format.startsWith("MET", i + 1)){
-                    sb.append(format, last, i);
-                    i += 3;
-                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, threadName, methodName);
-                    last = i + 1;
-                }
-                else if(format.startsWith("THREAD", i + 1)){
-                    sb.append(format, last, i);
-                    i += 6;
-                    i = appendValueOrElse(sb, format, i + 1, end, s, level, logName, className, methodName, threadName, threadName);
+                    i += key.length();
+                    i = appendValueOrElse(sb, format, i + 1, end, args, maxArgKeyLength, value);
                     last = i + 1;
                 }
             }
@@ -215,7 +195,7 @@ class StringUtils {
                         else if(p + 1 == end) continue outerLoop;
                     }
 
-                    String content = format(format, o, p, s, level, logName, className, methodName, threadName);
+                    String content = format(format, o, p, args, maxArgKeyLength);
 
                     sb.append(format, last, i);
                     if(alignSign == '<'){
@@ -241,7 +221,7 @@ class StringUtils {
         return sb.toString();
     }
 
-    private static int appendValueOrElse(StringBuilder sb, String format, int i, int end, String s, String level, String logName, String className, String methodName, String threadName, String value){
+    private static int appendValueOrElse(StringBuilder sb, String format, int i, int end, Map<String, Object> args, int maxArgKeyLength, Object value){
         int o = i;
         if(o != end && format.charAt(o) == '?'){
             if(++o != end && format.charAt(o) == '{'){
@@ -265,7 +245,7 @@ class StringUtils {
                         }
 
                         if(value == null) {
-                            String content = format(format, o, p, s, level, logName, className, methodName, threadName);
+                            String content = format(format, o, p, args, maxArgKeyLength);
                             sb.append(content);
                         }
                         else {
@@ -330,6 +310,14 @@ class StringUtils {
     private static int lengthOfContent(String content){
         String resultString = content.replaceAll("\u001B\\[[0-9]+m", "");
         return resultString.length();
+    }
+
+    private static String getDate(){
+        return "";
+    }
+
+    private static String getTime(){
+        return "";
     }
 
 }
