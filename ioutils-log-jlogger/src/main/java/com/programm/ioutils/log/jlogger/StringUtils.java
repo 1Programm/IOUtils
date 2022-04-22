@@ -125,12 +125,17 @@ class StringUtils {
                 String key = null;
                 for(int o=Math.min(i+1+maxArgKeyLength, end);o>i;o--){
                     key = format.substring(i+1, o);
-                    value = args.get(key);
-                    if(value != null) break;
-                    if(o - 1 == i) break;
+                    if(args.containsKey(key)){
+                        value = args.get(key);
+                        break;
+                    }
+                    if(o - 1 == i) {
+                        key = null;
+                        break;
+                    }
                 }
 
-                if(value != null){
+                if(key != null){
                     sb.append(format, last, i);
                     i += key.length();
                     i = appendValueOrElse(sb, format, i + 1, end, args, maxArgKeyLength, value);
