@@ -1,78 +1,28 @@
 package com.programm.ioutils.log.jlogger;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class StringUtils {
 
-    public static String replaceArgs(String message, String replaceStart, String replaceEnd, Object... args) {
-        if(message == null || args == null || args.length == 0) return message;
-
-        StringBuilder sb = new StringBuilder();
-
-        int i=0;
-        int last = 0;
-        int index;
-
-        while((index = message.indexOf(replaceStart, last)) != -1){
-            sb.append(message, last, index);
-
-            int replaceEndIndex = message.indexOf(replaceEnd, index + 1);
-            if(replaceEndIndex == -1) break;
-
-            last = index;
-
-            if(index + replaceStart.length() + 1 < replaceEndIndex) {
-                String between = message.substring(index + replaceStart.length(), replaceEndIndex);
-
-                try {
-                    int num = Integer.parseInt(between);
-                    if(num >= args.length) continue;
-
-                    if(args[num] != null) {
-                        sb.append(args[num].toString());
-                    }
-                    else {
-                        sb.append("null");
-                    }
-                }
-                catch (NumberFormatException e){
-                    continue;
-                }
-            }
-            else {
-                if(i >= args.length) break;
-
-                if(args[i] != null) {
-                    sb.append(args[i].toString());
-                }
-                else {
-                    sb.append("null");
-                }
-                i++;
-            }
-
-            last = replaceEndIndex + replaceEnd.length();
-        }
-
-        sb.append(message, last, message.length());
-
-        return sb.toString();
-    }
-
     public static String prepareMessage(String s, Object... args){
+        AtomicInteger argsIndex = new AtomicInteger(0);
+        return prepareMessage(s, 0, s.length(), argsIndex, args);
+    }
+    private static String prepareMessage(String s, int start, int end, AtomicInteger argsIndex, Object... args){
         StringBuilder sb = new StringBuilder();
 
-        int argsIndex = 0;
-        int last = 0;
+        int last = start;
 
-        for(int i=0;i<s.length();i++){
+        outerLoop:
+        for(int i=start;i<end;i++){
             char c = s.charAt(i);
 
             if(c == '{'){
                 int openBracket = i;
                 i++;
                 StringBuilder _num = new StringBuilder();
-                while(i < s.length()){
+                while(i < end){
                     c = s.charAt(i);
                     if(!Character.isDigit(c)) break;
                     _num.append(c);
@@ -86,9 +36,9 @@ class StringUtils {
                     }
 
                     if(num == null){
-                        if(argsIndex < args.length){
+                        if(argsIndex.get() < args.length){
                             sb.append(s, last, openBracket);
-                            sb.append(args[argsIndex++]);
+                            sb.append(args[argsIndex.getAndIncrement()]);
                             last = i + 1;
                         }
                     }
@@ -100,10 +50,88 @@ class StringUtils {
                         }
                     }
                 }
+                else {
+                    i--;
+                }
+            }
+            else if(c == '%'){
+                int o = i + 1;
+                if(o == end) continue;
+                char curChar = 0;
+
+                int oi = o;
+                for(;oi<end;oi++){
+                    curChar = s.charAt(oi);
+                    if(!Character.isDigit(curChar)) break;
+                    if(oi + 1 == end) continue outerLoop;
+                }
+
+                String _alignNum = s.substring(o, oi);
+                int alignNum = Integer.parseInt(_alignNum);
+
+                o = oi;
+
+                if(curChar != '<' && curChar != '|' && curChar != '>') continue;
+                char alignSign = curChar;
+                o++;
+                if(o == end) continue;
+                curChar = s.charAt(o);
+
+                String alignFill = " ";
+
+                if(curChar == '[') {
+                    o++;
+                    if(o == end) continue;
+                    int p = o;
+                    for(;p<end;p++){
+                        curChar = s.charAt(p);
+                        if(curChar == ']') break;
+                        if(p + 1 == end) continue outerLoop;
+                    }
+
+                    alignFill = s.substring(o, p);
+                    o = p + 1;
+                    if(o == end) continue;
+                    curChar = s.charAt(o);
+                }
+
+                if(curChar == '('){
+                    o++;
+                    if(o == end) continue;
+                    int p = o;
+                    int open = 1;
+                    for(;p<end;p++){
+                        curChar = s.charAt(p);
+                        if(curChar == '(') {
+                            open++;
+                        }
+                        else if(curChar == ')'){
+                            open--;
+                            if(open == 0) break;
+                        }
+                        else if(p + 1 == end) continue outerLoop;
+                    }
+
+                    String content = prepareMessage(s, o, p, argsIndex, args);
+
+                    sb.append(s, last, i);
+                    if(alignSign == '<'){
+                        alignLeft(sb, content, alignFill, alignNum);
+                    }
+                    else if(alignSign == '|'){
+                        alignCenter(sb, content, alignFill, alignNum);
+                    }
+                    else {
+                        alignRight(sb, content, alignFill, alignNum);
+                    }
+
+                    i = p;
+                    last = i + 1;
+                }
             }
         }
 
-        sb.append(s, last, s.length());
+        sb.append(s, last, end);
 
         return sb.toString();
     }
