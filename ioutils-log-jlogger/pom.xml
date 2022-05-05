@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>ioutils-log-jlogger</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.5</version>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -20,8 +20,13 @@
     <dependencies>
         <dependency>
             <groupId>com.programm.ioutils</groupId>
+            <artifactId>ioutils-io-api</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.programm.ioutils</groupId>
             <artifactId>ioutils-log-api</artifactId>
-            <version>1.0.1</version>
+            <version>1.0.3</version>
         </dependency>
     </dependencies>
 

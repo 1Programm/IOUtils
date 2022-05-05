@@ -18,6 +18,9 @@ public class NullLogger implements ILogger {
     public void error(String s, Object... args) {}
 
     @Override
+    public void logException(String msg, Throwable t) {}
+
+    @Override
     public int level() {
         return LEVEL_NONE;
     }

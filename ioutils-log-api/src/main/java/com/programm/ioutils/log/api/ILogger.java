@@ -60,6 +60,13 @@ public interface ILogger {
     void warn(String s, Object... args);
     void error(String s, Object... args);
 
+
+    void logException(String msg, Throwable t);
+
+    default void logException(Throwable t) {
+        logException(null, t);
+    }
+
     int level();
 
     default boolean isTrace(){

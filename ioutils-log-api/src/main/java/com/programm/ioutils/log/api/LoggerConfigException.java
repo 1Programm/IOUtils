@@ -12,4 +12,8 @@ public class LoggerConfigException extends RuntimeException {
     public LoggerConfigException(String message, Throwable cause) {
         super(message, cause);
     }
+
+    public LoggerConfigException(Throwable cause) {
+        super(cause);
+    }
 }

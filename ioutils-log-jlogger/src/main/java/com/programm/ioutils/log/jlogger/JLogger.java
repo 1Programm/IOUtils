@@ -3,11 +3,14 @@ package com.programm.ioutils.log.jlogger;
 import com.programm.ioutils.io.api.IOutput;
 import com.programm.ioutils.log.api.*;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class JLogger extends LevelLogger implements IConfigurableLogger {
 
@@ -61,6 +64,7 @@ public class JLogger extends LevelLogger implements IConfigurableLogger {
     private final Map<String, Integer> logNameLevels = new HashMap<>();
     private IOutput output = new DefaultConsoleOut();
     private String format;
+    private boolean doPrintStacktrace;
 
     private Class<?> nextLogInfoCls;
     private String nextLogInfoMethodName;
@@ -103,7 +107,7 @@ public class JLogger extends LevelLogger implements IConfigurableLogger {
                 StackTraceElement caller = callers[i];
                 String curMethodName = caller.getMethodName();
 
-                if (curMethodName.equals("trace") || curMethodName.equals("debug") || curMethodName.equals("info") || curMethodName.equals("warn") || curMethodName.equals("error")) {
+                if (curMethodName.equals("trace") || curMethodName.equals("debug") || curMethodName.equals("info") || curMethodName.equals("warn") || curMethodName.equals("error") || curMethodName.equals("logException")) {
                     String fullClsName = callers[i + 1].getClassName();
                     String methodName = callers[i + 1].getMethodName();
                     try {
@@ -150,6 +154,19 @@ public class JLogger extends LevelLogger implements IConfigurableLogger {
         output.println(message);
     }
 
+    @Override
+    public void logException(String msg, Throwable t) {
+        if(msg == null) msg = t.getMessage();
+        error(msg);
+
+        if(doPrintStacktrace) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            t.printStackTrace(pw);
+            output.println(sw.toString());
+        }
+    }
+
     private void putArgs(String msg, String lvl, String log, String cls, String met, String thread){
         formatArgs.put("MSG", msg);
         formatArgs.put("LVL", lvl);
@@ -191,11 +208,6 @@ public class JLogger extends LevelLogger implements IConfigurableLogger {
         return level;
     }
 
-    public JLogger level(int level) throws LoggerConfigException {
-        super.level(level);
-        return this;
-    }
-
     @Override
     public void setNextLogInfo(Class<?> cls, String methodName) {
         this.nextLogInfoCls = cls;
@@ -203,26 +215,74 @@ public class JLogger extends LevelLogger implements IConfigurableLogger {
     }
 
     @Override
+    public JLogger config(String name, Object... args) throws LoggerConfigException, LoggerUnsupportedConfigException {
+        switch (name){
+            case "level":
+                checkArgs(args, 1);
+                return level(parseArgumentToNum(args[0]));
+            case "format":
+                checkArgs(args, 1);
+                return format(Objects.toString(args[0]));
+            case "packageLevel":
+                checkArgs(args, 2);
+                return packageLevel(Objects.toString(args[0]), parseArgumentToNum(args[1]));
+            case "logNameLevel":
+                checkArgs(args, 2);
+                return logNameLevel(Objects.toString(args[0]), parseArgumentToNum(args[1]));
+            case "output":
+                checkArgs(args, 1);
+                Object _out = args[0];
+                if(_out instanceof IOutput){
+                    return output((IOutput) _out);
+                }
+                else {
+                    throw new LoggerConfigException("Argument is not an instance of IOutput!");
+                }
+            case "printStacktraceForExceptions":
+                checkArgs(args, 1);
+                String _bool = Objects.toString(args[0]);
+                if(_bool.equalsIgnoreCase("true")){
+                    return printStacktraceForExceptions(true);
+                }
+                else if(_bool.equalsIgnoreCase("false")){
+                    return printStacktraceForExceptions(false);
+                }
+                else {
+                    throw new LoggerConfigException("Argument is not a boolean value!");
+                }
+        }
+
+        throw new LoggerUnsupportedConfigException("Unsupported configuration operation!");
+    }
+
+    @Override
+    public JLogger level(int level) throws LoggerConfigException {
+        super.level(level);
+        return this;
+    }
+
     public JLogger format(String format) throws LoggerConfigException {
         this.format = format;
         return this;
     }
 
-    @Override
     public JLogger packageLevel(String pkg, int level) throws LoggerConfigException {
         setPkgLevel(pkgLvlNodes, pkg.split("\\."), 0, level);
         return this;
     }
 
-    @Override
-    public IConfigurableLogger logNameLevel(String name, int level) throws LoggerConfigException {
+    public JLogger logNameLevel(String name, int level) throws LoggerConfigException {
         logNameLevels.put(name, level);
         return this;
     }
 
-    @Override
     public JLogger output(IOutput output) throws LoggerConfigException {
         this.output = output;
+        return this;
+    }
+
+    public JLogger printStacktraceForExceptions(boolean printStacktrace) throws LoggerConfigException {
+        this.doPrintStacktrace = printStacktrace;
         return this;
     }
 
@@ -258,5 +318,23 @@ public class JLogger extends LevelLogger implements IConfigurableLogger {
 
             setPkgLevel(node.children, pkg, index + 1, level);
         }
+    }
+
+    private void checkArgs(Object[] args, int count) throws LoggerConfigException {
+        int argc = args == null ? 0 : args.length;
+        if(argc != count) throw new LoggerConfigException("Expected [" + count + "] argument for configuration - got [" + argc + "]!");
+    }
+
+    private int parseArgumentToNum(Object arg) throws LoggerConfigException {
+        String _num = arg.toString();
+        int num;
+        try {
+            num = Integer.parseInt(_num);
+        }
+        catch (NumberFormatException e){
+            throw new LoggerConfigException("Argument is not a number!", e);
+        }
+
+        return num;
     }
 }
